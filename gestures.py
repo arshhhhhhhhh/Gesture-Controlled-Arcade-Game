@@ -1,51 +1,48 @@
 import math
 
 
-def _distance(lm_list, p1, p2):
-    x1, y1 = lm_list[p1][1], lm_list[p1][2]
-    x2, y2 = lm_list[p2][1], lm_list[p2][2]
+def distance_between_landmarks(landmark_list, start_index, end_index):
+    x1, y1 = landmark_list[start_index][1], landmark_list[start_index][2]
+    x2, y2 = landmark_list[end_index][1], landmark_list[end_index][2]
     return math.hypot(x2 - x1, y2 - y1)
 
 
-def _hand_scale(lm_list):
-    ref = _distance(lm_list, 0, 9)
-    return ref if ref != 0 else 1
+def estimate_hand_scale(landmark_list):
+    reference_length = distance_between_landmarks(landmark_list, 0, 9)
+    return reference_length if reference_length != 0 else 1
 
 
-def fingers_up(lm_list, hand_label="Right"):
-    """Returns [thumb, index, middle, ring, pinky], 1 = up."""
-    fingers = []
+def fingers_up(landmark_list):
+    finger_states = []
 
-    if hand_label == "Right":
-        fingers.append(1 if lm_list[4][1] > lm_list[3][1] else 0)
-    else:
-        fingers.append(1 if lm_list[4][1] < lm_list[3][1] else 0)
+    pinky_base_joint = 17
+    thumb_tip_distance = distance_between_landmarks(landmark_list, 4, pinky_base_joint)
+    thumb_inner_distance = distance_between_landmarks(landmark_list, 3, pinky_base_joint)
+    finger_states.append(1 if thumb_tip_distance > thumb_inner_distance else 0)
 
-    for tip in [8, 12, 16, 20]:
-        fingers.append(1 if lm_list[tip][2] < lm_list[tip - 2][2] else 0)
+    for tip_index in [8, 12, 16, 20]:
+        finger_states.append(1 if landmark_list[tip_index][2] < landmark_list[tip_index - 2][2] else 0)
 
-    return fingers
+    return finger_states
 
 
-def classify(lm_list, hand_label="Right"):
-    """Main entry point. Returns a gesture name string."""
-    if not lm_list or len(lm_list) < 21:
+def classify(landmark_list, hand_label="Right"):
+    """Main entry point for gesture recognition."""
+    if not landmark_list or len(landmark_list) < 21:
         return "NONE"
 
-    fingers = fingers_up(lm_list, hand_label)
-    scale = _hand_scale(lm_list)
+    finger_states = fingers_up(landmark_list)
+    estimate_hand_scale(landmark_list)
 
-    pinch = _distance(lm_list, 4, 8) / scale
-
-    if fingers == [0, 0, 0, 0, 0]:
+    if finger_states == [0, 0, 0, 0, 0]:
         return "FIST"
-    if fingers == [1, 1, 1, 1, 1]:
+    if finger_states == [1, 1, 1, 1, 1]:
         return "OPEN_PALM"
-    if fingers == [0, 1, 0, 0, 0]:
+    if finger_states == [0, 1, 0, 0, 0]:
         return "POINTING"
-    if fingers == [0, 1, 1, 0, 0]:
+    if finger_states == [0, 1, 1, 0, 0]:
         return "PEACE"
-    if fingers == [1, 0, 0, 0, 0]:
+    if finger_states == [1, 0, 0, 0, 0]:
         return "THUMBS_UP"
-    
+
     return "UNKNOWN"
