@@ -1,6 +1,7 @@
 import sys
 
 import pygame
+import random
 
 from assets import (
     AssetManager,
@@ -193,7 +194,8 @@ class Game:
 
             if self.pipes:
                 latest_pipe = self.pipes[-1]
-                if latest_pipe.top_rect.x <= WIDTH + 100 - PIPE_SPAWN_DISTANCE:
+                num = random.randint(1,6)*20
+                if latest_pipe.top_rect.x <= WIDTH + num - PIPE_SPAWN_DISTANCE:
                     self.pipes.append(Pipe(self.assets.pipe))
 
             for pipe in self.pipes:
